@@ -1,0 +1,39 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Install Java for Server
+      become: yes
+      shell: mkdir -p /usr/lib/jvm &&  wget https://download.java.net/java/GA/jdk15.0.2/0d1cfde4252546c6931946de8db48ee2/7/GPL/openjdk-15.0.2_linux-x64_bin.tar.gz && tar xvf openjdk-15.0.2_linux-x64_bin.tar.gz --directory /usr/lib/jvm/ && update-alternatives --install /usr/bin/java java /usr/lib/jvm/jdk-15.0.2/bin/java 1 && update-alternatives --install /usr/bin/javac javac /usr/lib/jvm/jdk-15.0.2/bin/javac 1
+
+    - name: Install Git package
+      become: yes
+      apt: name=git update_cache=yes state=latest
+
+    - name: Create Directory for JavaServer
+      become: yes
+      file:
+        path: /home/ChatServer
+        state: directory
+
+    - name: Git checkout website
+      become: yes
+      git:
+        repo: https://github.com/Mohsen51/java_pipelino.git
+        dest: /home/ChatServer
+
+    - name: Create service
+      become: yes
+      shell: echo "[Unit] \nAfter=network.service\n[Service]\nExecStart=/usr/local/bin/java-server.sh\n[Install]\nWantedBy=default.target" >> /etc/systemd/system/java-server.service
+
+    - name: Create script
+      become: yes
+      shell: echo "#!/bin/bash \n java -jar /home/ChatServer/Server.jar" >> /usr/local/bin/java-server.sh
+
+    - name: Appropriate rights
+      become: yes
+      shell: sudo chmod 744 /usr/local/bin/java-server.sh && sudo chmod 664 /etc/systemd/system/java-server.service
+
+    - name: enable service
+      become: yes
+      shell:  sudo systemctl daemon-reload && sudo systemctl enable java-server.service
